@@ -42,7 +42,8 @@ from imutils.video import FPS
 # MQTT server environment variables
 HOSTNAME = socket.gethostname()
 IPADDRESS = socket.gethostbyname(HOSTNAME)
-MQTT_HOST = IPADDRESS
+# MQTT_HOST = IPADDRESS
+MQTT_HOST = "13.229.206.192"
 MQTT_PORT = 3001
 MQTT_KEEPALIVE_INTERVAL = 60
 MQTT_TOPIC1 = "person"

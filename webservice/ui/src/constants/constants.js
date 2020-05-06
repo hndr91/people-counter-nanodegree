@@ -21,7 +21,8 @@ export const HTTP = {
 export const MQTT = {
   // MQTT_SERVER: "wss://" + WS_HOST + "-3002.udacity-student-workspaces.com",
   // For local use
-  MQTT_SERVER: "ws://localhost:3002",
+  // MQTT_SERVER: "ws://localhost:3002",
+  MQTT_SERVER: "ws://13.229.206.192:3002",
   TOPICS: {
     PERSON: "person", // how many people did we see
     DURATION: "person/duration", // how long were they on frame
