@@ -87,11 +87,11 @@ def connect_mqtt():
 
     return client
 
-def preprocessing(frame, frame_size=300):
+def preprocessing(frame, model_input_shape):    
     # model format
-    n, c, h, w = [1, 3, frame_size, frame_size]
+    n, c, h, w = model_input_shape
     # resize frame to fit model spec
-    dim = (frame_size, frame_size)
+    dim = (h, w)
     image = np.copy(frame)
     image = cv2.resize(image, dim)
     # Rearrange image to CHW format
@@ -102,8 +102,8 @@ def preprocessing(frame, frame_size=300):
     return image
 
 
-def infer_on_stream(args, client):
-# def infer_on_stream(args):
+# def infer_on_stream(args, client):
+def infer_on_stream(args):
     """
     Initialize the inference network, stream video to network,
     and output stats and video.
@@ -117,6 +117,8 @@ def infer_on_stream(args, client):
     list_time_onframe = []
     avg_dur_on_frame = 0
 
+    input_dict = {}
+
     # Initialise the class
     infer_network = Network()
     # Set Probability threshold for detections
@@ -125,8 +127,17 @@ def infer_on_stream(args, client):
     ### TODO: Load the model through `infer_network` ###
     infer_network.load_model(args.model, args.device)
 
+    # Get blob input name
+    input_blob_name, img_info_blob_name = infer_network.get_input_blob_name()
+
     ### TODO: Handle the input stream ###
-    net_input_stream = infer_network.get_input_shape()
+    input_img_shape,_ = infer_network.get_input_shape()
+    
+    # Check if model need 2 input like Faster RCNN or not
+    _, h, _, w = input_img_shape
+    if img_info_blob_name is not None:
+        input_dict[img_info_blob_name] = [h, w, 1]
+        
 
     if "WEBCAM" in args.input:
         cap = cv2.VideoCapture(0)
@@ -155,10 +166,17 @@ def infer_on_stream(args, client):
         key_pressed = cv2.waitKey(30)
 
         ### TODO: Pre-process the image as needed ###
-        prep_frame = preprocessing(frame)
+        prep_frame = preprocessing(frame, input_img_shape)
+
+        # Put prep frame to input_blob key in input_dict dictionary
+        input_dict[input_blob_name] = prep_frame
 
         ### TODO: Start asynchronous inference for specified request ###
-        infer_network.exec_net(prep_frame)
+        # old
+        # infer_network.exec_net(prep_frame)
+
+        # method exec_net now take dictionary parameters
+        infer_network.exec_net(input_dict)
 
         ### TODO: Wait for the result ###
         if infer_network.wait() == 0:
@@ -192,7 +210,7 @@ def infer_on_stream(args, client):
                 people_onframe = current_count
                 
                 # Send to MQTT Server
-                client.publish(MQTT_TOPIC1, json.dumps({"count" : people_onframe, "total" : people_count}))
+                # client.publish(MQTT_TOPIC1, json.dumps({"count" : people_onframe, "total" : people_count}))
                 
                 last_count = current_count
 
@@ -201,7 +219,7 @@ def infer_on_stream(args, client):
                 duration = time.perf_counter() - start_time
                 # print("Duration : {}".format(duration))
                 
-                client.publish(MQTT_TOPIC2, json.dumps({"duration" : duration}))
+                # client.publish(MQTT_TOPIC2, json.dumps({"duration" : duration}))
                 
                 people_onframe = current_count
                 last_count = current_count
@@ -226,10 +244,10 @@ def infer_on_stream(args, client):
         cv2.putText(frame, people_on_frame, (5, 60), font, fontscale, color, thk, cv2.LINE_AA, False)
         
         
-        # cv2.imshow('capture', frame)
+        cv2.imshow('capture', frame)
         ### TODO: Send the frame to the FFMPEG server ###
-        sys.stdout.buffer.write(frame)
-        sys.stdout.flush()
+        # sys.stdout.buffer.write(frame)
+        # sys.stdout.flush()
 
         ### TODO: Write an output image if `single_image_mode` ###
     
@@ -241,7 +259,7 @@ def infer_on_stream(args, client):
     # out.release()
     cap.release()
     cv2.destroyAllWindows()
-    client.disconnect()
+    # client.disconnect()
 
 def main():
     """
@@ -252,10 +270,10 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     # Connect to the MQTT server
-    client = connect_mqtt()
+    # client = connect_mqtt()
     # Perform inference on the input stream
-    infer_on_stream(args, client)
-    # infer_on_stream(args)
+    # infer_on_stream(args, client)
+    infer_on_stream(args)
 
 
 if __name__ == '__main__':
