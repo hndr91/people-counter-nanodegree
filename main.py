@@ -131,7 +131,14 @@ def infer_on_stream(args):
     input_blob_name, img_info_blob_name = infer_network.get_input_blob_name()
 
     ### TODO: Handle the input stream ###
-    input_img_shape,_ = infer_network.get_input_shape()
+    shapes = infer_network.get_input_shape()
+
+    if type(shapes) is not tuple:
+        # If single input shape
+        input_img_shape = shapes
+    else:
+        # If two input shape
+        input_img_shape = shapes[0]
     
     # Check if model need 2 input like Faster RCNN or not
     _, h, _, w = input_img_shape
@@ -139,12 +146,15 @@ def infer_on_stream(args):
         input_dict[img_info_blob_name] = [h, w, 1]
         
 
+
     if "WEBCAM" in args.input:
         cap = cv2.VideoCapture(0)
         cap.open(0)
     else:
         cap = cv2.VideoCapture(args.input)
         cap.open(args.input)
+
+        
 
     width = int(cap.get(3))
     height = int(cap.get(4))
@@ -250,6 +260,9 @@ def infer_on_stream(args):
         # sys.stdout.flush()
 
         ### TODO: Write an output image if `single_image_mode` ###
+        if args.input is not "WEBCAM" and int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) < 1:
+            cv2.imwrite("output-image.png", frame)
+        
     
         
         # out.write(frame)
