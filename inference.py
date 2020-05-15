@@ -57,13 +57,14 @@ class Network:
         self.plugin = IECore()
 
         # Add a CPU extension, if applicable
-        # if cpu_extension and "CPU" in device:
-        #     self.plugin.add_extension(cpu_extension, device)
+        if cpu_extension and "CPU" in device:
+            self.plugin.add_extension(cpu_extension, device)
 
         # Read the IR as a IENetwork
         self.network = IENetwork(model=model_xml, weights=model_bin)
 
         # Load the IENetwork into the plugin
+        # This is my experimental on HETERO plugin only using MYRIAD
         if "HETERO" in device:
             devices = self.plugin.available_devices
             devices = [d for d in devices if "MYRIAD" in d]
@@ -74,8 +75,6 @@ class Network:
         else:
             self.exec_network = self.plugin.load_network(self.network, device)
 
-        # Get the input layer
-        # self.input_blob = next(iter(self.network.inputs))
 
         # Get the output layer
         self.output_blob = next(iter(self.network.outputs))
@@ -83,7 +82,7 @@ class Network:
         return
 
     def get_input_blob_name(self):
-
+        # Get all possible input layer
         for blob_name in self.network.inputs:
             if len(self.network.inputs[blob_name].shape) == 4:
                 self.input_blob = blob_name
@@ -96,7 +95,7 @@ class Network:
 
     def get_input_shape(self):
         ### TODO: Return the shape of the input layer ###
-        # return self.network.inputs[self.input_blob].shape
+        
         # Do some modification to handle 2 input for model Faster RCNN like
         if self.img_info_blob:
             return self.network.inputs[self.input_blob].shape, self.network.inputs[self.img_info_blob].shape
@@ -109,7 +108,6 @@ class Network:
         ### TODO: Start an asynchronous request ###
         ### TODO: Return any necessary information ###
         ### Note: You may need to update the function parameters. ###
-        # return self.exec_network.start_async(request_id=0, inputs={self.input_blob: image})
         
         # Update input to handle dictionary parameters.
         return self.exec_network.start_async(request_id=0, inputs=input_dict)
