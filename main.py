@@ -39,18 +39,20 @@ import ffmpeg
 from imutils.video import FPS
 
 # MQTT server environment variables
-HOSTNAME = socket.gethostname()
-IPADDRESS = socket.gethostbyname(HOSTNAME)
-MQTT_HOST = IPADDRESS
-MQTT_PORT = 3001
-MQTT_KEEPALIVE_INTERVAL = 60
-MQTT_TOPIC1 = "person"
-MQTT_TOPIC2 = "person/duration"
+# HOSTNAME = socket.gethostname()
+# IPADDRESS = socket.gethostbyname(HOSTNAME)
+# MQTT_HOST = IPADDRESS
+# MQTT_PORT = 3001
+# MQTT_KEEPALIVE_INTERVAL = 60
+# MQTT_TOPIC1 = "person"
+# MQTT_TOPIC2 = "person/duration"
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 fontscale = 0.5
 color = (255,0,0)
 thk = 1
+
+fps_list = []
 
 def build_argparser():
     """
@@ -101,8 +103,8 @@ def preprocessing(frame, model_input_shape):
     return image
 
 
-def infer_on_stream(args, client):
-# def infer_on_stream(args):
+# def infer_on_stream(args, client):
+def infer_on_stream(args):
     """
     Initialize the inference network, stream video to network,
     and output stats and video.
@@ -124,7 +126,8 @@ def infer_on_stream(args, client):
     prob_threshold = args.prob_threshold
 
     ### TODO: Load the model through `infer_network` ###
-    infer_network.load_model(args.model, args.device)
+    infer_network.load_model(args.model, args.device, args.cpu_extension)
+    
 
     # Get blob input name
     input_blob_name, img_info_blob_name = infer_network.get_input_blob_name()
@@ -209,7 +212,7 @@ def infer_on_stream(args, client):
                 people_onframe = current_count
                 
                 # Send to MQTT Server
-                client.publish(MQTT_TOPIC1, json.dumps({"count" : people_onframe, "total" : people_count}))
+                # client.publish(MQTT_TOPIC1, json.dumps({"count" : people_onframe, "total" : people_count}))
                 
                 last_count = current_count
 
@@ -218,7 +221,7 @@ def infer_on_stream(args, client):
                 duration = time.perf_counter() - start_time
                 # print("Duration : {}".format(duration))
                 
-                client.publish(MQTT_TOPIC2, json.dumps({"duration" : duration}))
+                # client.publish(MQTT_TOPIC2, json.dumps({"duration" : duration}))
                 
                 people_onframe = current_count
                 last_count = current_count
@@ -234,6 +237,7 @@ def infer_on_stream(args, client):
         # Draw some information
         fps.update()
         fps.stop()
+        fps_list.append(fps.fps())
         infer = "Approx FPS : {:.2f}".format(fps.fps())
         people_count_txt = "People Count : {}".format(people_count)
         people_on_frame = "People on Frame : {}".format(people_onframe)
@@ -243,10 +247,10 @@ def infer_on_stream(args, client):
         cv2.putText(frame, people_on_frame, (5, 60), font, fontscale, color, thk, cv2.LINE_AA, False)
         
         
-        # cv2.imshow('capture', frame)
+        cv2.imshow('capture', frame)
         ### TODO: Send the frame to the FFMPEG server ###
-        sys.stdout.buffer.write(frame)
-        sys.stdout.flush()
+        # sys.stdout.buffer.write(frame)
+        # sys.stdout.flush()
 
         ### TODO: Write an output image if `single_image_mode` ###
         if args.input is not "WEBCAM" and int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) < 1:
@@ -259,7 +263,8 @@ def infer_on_stream(args, client):
     # out.release()
     cap.release()
     cv2.destroyAllWindows()
-    client.disconnect()
+    # client.disconnect()
+    print("Average FPS : {}".format(np.mean(fps_list)))
 
 def main():
     """
@@ -270,10 +275,10 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     # Connect to the MQTT server
-    client = connect_mqtt()
+    # client = connect_mqtt()
     # Perform inference on the input stream
-    infer_on_stream(args, client)
-    # infer_on_stream(args)
+    # infer_on_stream(args, client)
+    infer_on_stream(args)
 
 
 if __name__ == '__main__':

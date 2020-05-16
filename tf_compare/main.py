@@ -8,6 +8,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 fontscale = 0.5
 color = (255,0,0)
 thk = 1
+fps_list = []
 
 
 def build_argparser():
@@ -60,6 +61,7 @@ def infer(args):
 
         fps.update()
         fps.stop()
+        fps_list.append(fps.fps())
         infer = "Approx FPS : {:.2f}".format(fps.fps())
         cv2.putText(frame, infer, (5, 20), font, fontscale, color, thk, cv2.LINE_AA, False)
 
@@ -70,6 +72,7 @@ def infer(args):
     
     cap.release()
     cv2.destroyAllWindows()
+    print("Average FPS : {}".format(np.mean(fps_list)))
 
 def main():
     args = build_argparser().parse_args()
