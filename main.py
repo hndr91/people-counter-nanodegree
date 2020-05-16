@@ -124,7 +124,7 @@ def infer_on_stream(args, client):
     prob_threshold = args.prob_threshold
 
     ### TODO: Load the model through `infer_network` ###
-    infer_network.load_model(args.model, args.device)
+    infer_network.load_model(args.model, args.device, args.cpu_extension)
 
     # Get blob input name
     input_blob_name, img_info_blob_name = infer_network.get_input_blob_name()
