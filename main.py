@@ -35,7 +35,6 @@ from argparse import ArgumentParser
 from inference import Network
 
 import ffmpeg
-import sys
 
 from imutils.video import FPS
 
